@@ -2,6 +2,7 @@ use crate::error_template::{AppError, ErrorTemplate};
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
+use serde::{Serialize, Deserialize};
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
@@ -36,15 +37,86 @@ pub fn App(cx: Scope) -> impl IntoView {
     }
 }
 
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Thing {
+    description: String,
+    source_port: u16,
+    target_port: u16,
+    target_ip_address: String,
+    enabled: bool,
+}
+
+#[server(Things)]
+pub async fn get_things() -> Result<Vec<Thing>, ServerFnError> {
+    std::thread::sleep(std::time::Duration::from_millis(1200));
+
+    let mut things = Vec::new();
+    things.push(Thing {
+        description: "please".to_owned(),
+        source_port: 25565,
+        target_port: 25565,
+        target_ip_address: "192.168.1.123".to_owned(),
+        enabled: true
+    });
+    Ok(things)
+}
+
 /// Renders the home page of your application.
 #[component]
 fn HomePage(cx: Scope) -> impl IntoView {
-    // Creates a reactive value to update the button
-    let (count, set_count) = create_signal(cx, 0);
-    let on_click = move |_| set_count.update(|count| *count += 1);
+    let things = create_resource(
+        cx,
+        move || true,
+        move |_| get_things()
+    );
 
     view! { cx,
-        <h1>"Welcome to Leptos!"</h1>
-        <button on:click=on_click>"Click Me: " {count}</button>
+        <h2>"Your port forwards"</h2>
+        <Transition fallback=move || view! {cx, <p>"Loading.."</p>}>
+            {
+                move || {
+                    let the_things = {
+                        move || {
+                            things.read(cx)
+                            .map(move |things| match things {
+                                Err(e) => {
+                                    view! { cx, <pre class="error">"Server Error: " {e.to_string()}</pre>}.into_view(cx)
+                                },
+                                Ok(things) => {
+                                    if things.is_empty() {
+                                        view! { cx, <p>"no things"</p> }.into_view(cx)
+                                    } else {
+                                        let list = things
+                                        .into_iter()
+                                        .map(move |thing| {
+                                            view! {
+                                                cx,
+                                                <li>:{thing.source_port} --> {thing.target_ip_address}:{thing.target_port}</li>
+                                            }
+                                        })
+                                        .collect_view(cx);
+
+                                        view! {
+                                            cx,
+                                            <ul>
+                                                {list}
+                                            </ul>
+                                        }.into_view(cx)
+                                    }
+                                }
+                            }).collect_view(cx)
+                        }
+                    };
+
+                    view! {
+                        cx,
+                        <div>
+                            {the_things}
+                        </div>
+                    }
+                }
+            }
+        </Transition>
     }
 }
