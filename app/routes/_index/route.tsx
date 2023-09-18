@@ -67,8 +67,8 @@ export default function Index() {
 
   return (
     <div className="m-4">
-      <div className="mb-8 w-full bg-sky-300 p-3 rounded-md">
-        <h1 className="text-lg font-bold font-mono">{data.publicIpAddress}</h1>
+      <div className="mb-8 w-full rounded-md bg-sky-300 p-3">
+        <h1 className="font-mono text-lg font-bold">{data.publicIpAddress}</h1>
         <h1 className="text-sm">Internet accessible IP address</h1>
         <p className="mt-3">
           Traffic from the Internet to your servers is blocked by default.
@@ -78,10 +78,10 @@ export default function Index() {
       {data.servers.map((srv) => (
         <div
           key={srv.privateIpAddress}
-          className="mt-4 p-3 bg-gray-100 rounded-md"
+          className="mt-4 rounded-md bg-gray-100 p-3"
         >
           <div>
-            <h1 className="text-lg font-bold font-mono">
+            <h1 className="font-mono text-lg font-bold">
               {srv.privateIpAddress}
             </h1>
             <h1 className="text-sm">
@@ -89,7 +89,7 @@ export default function Index() {
             </h1>
           </div>
 
-          <table className="mt-4 table-auto w-full">
+          <table className="mt-4 w-full table-auto">
             <thead>
               <tr className="text-left">
                 <th>Internet</th>
@@ -111,7 +111,7 @@ export default function Index() {
                       )}
                     </button>
                     <button>
-                      <TrashIcon className="inline ml-1.5 h-5 w-5" />
+                      <TrashIcon className="ml-1.5 inline h-5 w-5" />
                     </button>
                   </td>
                 </tr>
