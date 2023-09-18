@@ -26,7 +26,7 @@ const getToken = async ({
   routerIpAddress: string;
 }) => {
   // TODO: should probably lock this to prevent multiple tokens being issued
-  if (token && tokenExpiresAt <= Date.now()) {
+  if (token && tokenExpiresAt >= Date.now()) {
     console.log('cached');
     return token;
   }
@@ -85,12 +85,12 @@ const getToken = async ({
   // this is in the token payload implying it lasts as long as the token.
   csrfToken = decoded.csrfToken;
   token = probablyToken;
-  tokenExpiresAt = decoded.exp;
+  tokenExpiresAt = decoded.exp * 1000;
 
   console.log(
     `New Unifi token retrieved for use until ${new Date(
-      tokenExpiresAt * 1000
-    ).toISOString()}`
+      tokenExpiresAt,
+    ).toISOString()}`,
   );
 
   return token;
