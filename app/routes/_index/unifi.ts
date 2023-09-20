@@ -13,7 +13,6 @@ const dispatcher = new Agent({
   },
 });
 
-let csrfToken: string | undefined;
 let token: string | undefined;
 let tokenExpiresAt = 0;
 const getToken = async ({
@@ -40,7 +39,7 @@ const getToken = async ({
       headers: {
         accept: 'text/html',
       },
-    }
+    },
   );
 
   const { headers } = await request(
@@ -59,13 +58,13 @@ const getToken = async ({
         token: '',
         rememberMe: false,
       }),
-    }
+    },
   );
 
   const setCookieHeader = headers['set-cookie'] as string;
   const probablyToken = setCookieHeader.substring(
     'TOKEN='.length,
-    setCookieHeader.indexOf(';')
+    setCookieHeader.indexOf(';'),
   );
 
   // We need to get the expiration timestamp but I'd also
@@ -83,7 +82,6 @@ const getToken = async ({
   // I'm not sure how long this token is valid for 🤔
   // The Unifi UI updates their CSRF token on every request though
   // this is in the token payload implying it lasts as long as the token.
-  csrfToken = decoded.csrfToken;
   token = probablyToken;
   tokenExpiresAt = decoded.exp * 1000;
 
@@ -110,12 +108,12 @@ export const getPortForwards = async ({
         'content-type': 'application/json',
         cookie: `TOKEN=${await getToken(auth)}`,
       },
-    }
+    },
   );
 
   if (statusCode !== 200) {
     const error: Error & { statusCode?: number } = new Error(
-      'could not list port forwards'
+      'could not list port forwards',
     );
     error.statusCode = statusCode;
     throw error;
@@ -160,7 +158,7 @@ export const getPortForwards = async ({
               enabled: z.literal(false),
             })
             .extend(base),
-        ])
+        ]),
       ),
     })
     .parse(json).data;
