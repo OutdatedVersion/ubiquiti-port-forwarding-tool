@@ -1,38 +1,15 @@
-# Welcome to Remix!
+# Gated port forwarding
 
-- [Remix Docs](https://remix.run/docs)
+> [!NOTE]  
+> This is a work-in-progress! 🦺🙂
 
-## Development
+Provides a way to expose a limited interface to expose ports in a network
+using a Ubiquiti router running Unifi OS' Network app.
 
-From your terminal:
+I've given out some virtual machines, running in [Proxmox VE](https://www.proxmox.com/en/proxmox-virtual-environment/overview), to friends which don't
+have any way to forward traffic to them. Since publicly exposing and handing
+out credentials to people didn't seem like a great idea this bridges that gap.
 
-```sh
-npm run dev
-```
+## 📸
 
-This starts your app in development mode, rebuilding assets on file changes.
-
-## Deployment
-
-First, build your app for production:
-
-```sh
-npm run build
-```
-
-Then run the app in production mode:
-
-```sh
-npm start
-```
-
-Now you'll need to pick a host to deploy it to.
-
-### DIY
-
-If you're familiar with deploying node applications, the built-in Remix app server is production-ready.
-
-Make sure to deploy the output of `remix build`
-
-- `build/`
-- `public/build/`
+![Homepage](docs/homepage.png)
