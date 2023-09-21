@@ -163,3 +163,22 @@ export const getPortForwards = async ({
     })
     .parse(json).data;
 };
+
+// Create
+// POST https://192.168.1.1/proxy/network/api/s/default/rest/portforward
+// {
+//   name: 'test',
+//   enabled: true,
+//   pfwd_interface: 'wan',
+//   src: 'any',
+//   dst_port: '4567',
+//   fwd: '192.168.1.5',
+//   fwd_port: '2',
+//   proto: 'tcp_udp',
+//   log: false,
+//   destination_ip: 'any',
+// }
+
+// Remove
+// DELETE https://192.168.1.1/proxy/network/api/s/default/rest/portforward/<id>
+// {}
