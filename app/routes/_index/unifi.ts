@@ -26,7 +26,7 @@ const getToken = async ({
 }) => {
   // TODO: should probably lock this to prevent multiple tokens being issued
   if (token && tokenExpiresAt >= Date.now()) {
-    console.log('cached');
+    console.log('Unifi token cache hit');
     return token;
   }
 
@@ -86,7 +86,7 @@ const getToken = async ({
   tokenExpiresAt = decoded.exp * 1000;
 
   console.log(
-    `New Unifi token retrieved for use until ${new Date(
+    `Unifi token retrieved for use until ${new Date(
       tokenExpiresAt,
     ).toISOString()}`,
   );

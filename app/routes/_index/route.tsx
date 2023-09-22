@@ -7,6 +7,7 @@ import {
 import { useLoaderData } from '@remix-run/react';
 import { getPortForwards } from './unifi';
 import { env } from '../../env';
+import { getPublicIpAddress } from './ip';
 
 export const meta: MetaFunction = () => {
   return [
@@ -36,7 +37,7 @@ export const loader = async () => {
   });
 
   return json({
-    publicIpAddress: '1.2.3.4',
+    publicIpAddress: await getPublicIpAddress(),
     servers: user.servers.map((srv) => ({
       ...srv,
       forwards: forwards
