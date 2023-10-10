@@ -1,7 +1,18 @@
+import assert from 'node:assert';
 import { Agent, request } from 'undici';
 import { decode as decodeJwt } from 'jsonwebtoken';
 import { z } from 'zod';
 import { env } from '../../env';
+import debug from 'debug';
+
+// should we just accept a URL?
+export interface RouterConnectionDetails {
+  username: string;
+  password: string;
+  routerIpAddress: string;
+}
+
+const debugLog = debug('unifi');
 
 const dispatcher = new Agent({
   connect: {
@@ -15,6 +26,8 @@ const dispatcher = new Agent({
 
 let token: string | undefined;
 let tokenExpiresAt = 0;
+let csrfToken: string | undefined;
+const tokenDebugLog = debugLog.extend('token');
 const getToken = async ({
   username,
   password,
@@ -26,7 +39,7 @@ const getToken = async ({
 }) => {
   // TODO: should probably lock this to prevent multiple tokens being issued
   if (token && tokenExpiresAt >= Date.now()) {
-    console.log('Unifi token cache hit');
+    tokenDebugLog('Unifi token cache hit');
     return token;
   }
 
@@ -41,6 +54,7 @@ const getToken = async ({
       },
     },
   );
+  tokenDebugLog('Bootstrap headers', bootstrapHeaders);
 
   const { headers } = await request(
     `https://${routerIpAddress}/api/auth/login`,
@@ -60,12 +74,14 @@ const getToken = async ({
       }),
     },
   );
+  tokenDebugLog('authn response headers', headers);
 
   const setCookieHeader = headers['set-cookie'] as string;
   const probablyToken = setCookieHeader.substring(
     'TOKEN='.length,
     setCookieHeader.indexOf(';'),
   );
+  tokenDebugLog(`'Set-Cookie' header`, setCookieHeader);
 
   // We need to get the expiration timestamp but I'd also
   // like to smoke check we parsed out the right thing
@@ -79,13 +95,15 @@ const getToken = async ({
     })
     .parse(decodeJwt(probablyToken));
 
+  tokenDebugLog('Decoded token', decoded);
   // I'm not sure how long this token is valid for 🤔
   // The Unifi UI updates their CSRF token on every request though
   // this is in the token payload implying it lasts as long as the token.
   token = probablyToken;
   tokenExpiresAt = decoded.exp * 1000;
+  csrfToken = decoded.csrfToken;
 
-  console.log(
+  tokenDebugLog(
     `Unifi token retrieved for use until ${new Date(
       tokenExpiresAt,
     ).toISOString()}`,
@@ -97,7 +115,7 @@ const getToken = async ({
 export const getPortForwards = async ({
   auth,
 }: {
-  auth: { username: string; password: string; routerIpAddress: string };
+  auth: RouterConnectionDetails;
 }) => {
   const { statusCode, body } = await request(
     `https://${auth.routerIpAddress}/proxy/network/api/s/default/rest/portforward`,
@@ -164,20 +182,50 @@ export const getPortForwards = async ({
     .parse(json).data;
 };
 
-// Create
-// POST https://192.168.1.1/proxy/network/api/s/default/rest/portforward
-// {
-//   name: 'test',
-//   enabled: true,
-//   pfwd_interface: 'wan',
-//   src: 'any',
-//   dst_port: '4567',
-//   fwd: '192.168.1.5',
-//   fwd_port: '2',
-//   proto: 'tcp_udp',
-//   log: false,
-//   destination_ip: 'any',
-// }
+export const createPortForward = async ({
+  publicPort,
+  targetPort,
+  targetIpAddress,
+  auth,
+}: {
+  publicPort: number;
+  targetPort: number;
+  targetIpAddress: string;
+  auth: RouterConnectionDetails;
+}) => {
+  const response = await request(
+    `https://${auth.routerIpAddress}/proxy/network/api/s/default/rest/portforward`,
+    {
+      dispatcher,
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'x-csrf-token': csrfToken,
+        cookie: `TOKEN=${await getToken(auth)}`,
+      },
+      body: JSON.stringify(
+        {
+          // I'm ok with a "try again if it collides" strat in this project
+          name: `forwarding-tool-${crypto.randomUUID().substring(0, 8)}`,
+          enabled: true,
+          pfwd_interface: 'wan',
+          src: 'any',
+          dst_port: `${publicPort}`,
+          fwd: targetIpAddress,
+          fwd_port: `${targetPort}`,
+          proto: 'tcp_udp',
+          log: false,
+          destination_ip: 'any',
+        },
+        null,
+        2,
+      ),
+    },
+  );
+
+  assert(response.statusCode === 200);
+};
 
 // Remove
 // DELETE https://192.168.1.1/proxy/network/api/s/default/rest/portforward/<id>
